@@ -1,5 +1,6 @@
 import networkx as nx 
 import argparse
+import os
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description='Reading command lines')
@@ -16,4 +17,43 @@ def main(argv=None):
     parser.add_argument('--plot',help='Plot the number of new infections per day when the simulation completes')
     args = parser.parse_args(argv)
 
-    
+    if not args.graph.lower().endswith(".gml"):
+        print(f"Error: Input file '{args.graph}' is not a .gml file.")
+        exit()
+
+    if not os.path.isfile(args.graph):
+        print(f"Error: Input file '{args.graph}' does not exist.")
+        exit()
+    # load the graph from input .gml
+    # graph will be an undirected graph object
+    G = nx.read_gml(args.graph)
+
+    if args.initiator:
+        begin = [int(x) for x in args.initiator.split(",")]
+    if args.action == 'covid':
+        #prob of infection
+        if args.probability_of_infection:
+            infect = float(args.probability_of_infection)
+        
+        #prob of death 
+        if args.probability_of_death:
+            death = float(args.probability_of_death)
+        
+        #lifespan 
+        if args.lifespan:
+            lifespan = int(args.lifespan)
+        
+        #TODO shelter - has to take both a probablity or list of protected ones 
+        if args.shelter:
+            pass
+        #vaccination
+        if args.vaccination:
+            vacc = args.vaccination
+        pass
+    else:
+        #threshold
+        threshold = float(args.threshold)
+        unInfected = list(G.nodes())
+        for i in begin:
+            G.nodes[i]["infected"] = True
+            unInfected.remove(i)
