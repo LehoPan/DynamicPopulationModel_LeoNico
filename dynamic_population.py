@@ -18,9 +18,6 @@ def infection_threshold_reached(G, node, threshold):
     # this is the check to see if it is enough
     return infected_count >= threshold * len(neighbors)
 
-
-
-
 def main(argv=None):
     parser = argparse.ArgumentParser(description='Reading command lines')
     parser.add_argument('graph', help='graph file')
@@ -77,7 +74,6 @@ def main(argv=None):
             exit()
         
         #shelter: dynamically decides if a portion are sheltered if given a number between 0 and 1, if a list, then shelters the listed nodes.
-        shelter_state = None
         if args.shelter:
             #treat as a portion sheltered
             if not ',' in args.shelter and float(args.shelter) > 0 and float(args.shelter) < 1:
@@ -101,7 +97,7 @@ def main(argv=None):
             number_vacc = int(G.number_of_nodes() * vacc)
             uninfected = list(set(G.nodes) - set(begin) - set(sheltered))
             try: #if there's not enough people left, just make all of the rest vaccinated
-                vaccinated = random.sample(uninfected, k=number_sheltered) #assuming infected nodes cannot be vaccinated already, so picks randomly from uninfected nodes
+                vaccinated = random.sample(uninfected, k=number_vacc) #assuming infected nodes cannot be vaccinated already, so picks randomly from uninfected nodes
             except:
                 vaccinated = list(uninfected)
 
@@ -162,7 +158,6 @@ def main(argv=None):
                 
             #Now see which infected die to the illness, if not, they recover
             for sick_node in infected:
-                infected.remove(sick_node)
                 die = random.random() < death
                 if die:
                     dead.append(sick_node)
