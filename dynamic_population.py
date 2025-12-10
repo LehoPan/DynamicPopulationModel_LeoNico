@@ -1,6 +1,23 @@
 import networkx as nx 
 import argparse
 import os
+import matplotlib.pyplot as plt
+
+
+def infection_threshold_reached(G, node, threshold):
+    neighbors = list(G.neighbors(node))
+    if not neighbors:  # avoid divide-by-zero
+        return False
+
+    infected_count = sum(
+        1 for nbr in neighbors 
+        if G.nodes[nbr].get("infected", False)
+    )
+
+    return infected_count >= threshold * len(neighbors)
+
+
+
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description='Reading command lines')
@@ -13,8 +30,8 @@ def main(argv=None):
     parser.add_argument('--lifespan',type=int,help='Define the lifespan l (e.g., a number of time steps or days) of the rounds')
     parser.add_argument('--shelter',type=int, help='Set the sheltering parameter s (e.g., a proportion or list of nodes that will be sheltered or protected from the infection).')
     parser.add_argument('--vaccination',type=str,help='Set the vaccination rate or proportion r (e.g., a number between 0 and 1) representing the proportion of the network that is vaccinated.')
-    parser.add_argument('--interactive',help='Plot the graph and the state of the nodes for every round')
-    parser.add_argument('--plot',help='Plot the number of new infections per day when the simulation completes')
+    parser.add_argument('--interactive',action='store_true',help='Plot the graph and the state of the nodes for every round')
+    parser.add_argument('--plot',action='store_true',help='Plot the number of new infections per day when the simulation completes')
     args = parser.parse_args(argv)
 
     if not args.graph.lower().endswith(".gml"):
@@ -53,7 +70,51 @@ def main(argv=None):
     else:
         #threshold
         threshold = float(args.threshold)
+        pos = nx.spring_layout(G)
         unInfected = list(G.nodes())
         for i in begin:
             G.nodes[i]["infected"] = True
             unInfected.remove(i)
+        changed = True
+
+        if args.interactive:
+            colors = ["red" if G.nodes[n].get("infected", False) else "lightgray" for n in G.nodes()]
+            nx.draw(G, pos, node_color=colors, with_labels=True)
+            plt.show()
+        
+        if args.plot:
+            new_infections = [len(begin)]
+
+        
+
+
+        while changed:
+            changeNode = []
+            changed = False
+            print(unInfected)
+            for i in unInfected:
+                if infection_threshold_reached(G, i, threshold):
+                    
+                    changed = True
+                    changeNode.append(i)
+            for node in changeNode:
+                G.nodes[node]["infected"] = True
+                unInfected.remove(node)
+            if args.interactive:
+                colors = ["red" if G.nodes[n].get("infected", False) else "lightgray" for n in G.nodes()]
+                nx.draw(G, pos, node_color=colors, with_labels=True)
+                plt.show()
+            if args.plot:
+                new_infections.append(len(changeNode))
+        print("These are the nodes that were unable to get the information")
+        print(unInfected)
+        if args.plot:
+            plt.figure()
+            plt.plot(new_infections, marker='o')
+            plt.xlabel("Round")
+            plt.ylabel("New infections")
+            plt.title("New infections per round")
+            plt.grid(True)
+            plt.show()
+
+main()
