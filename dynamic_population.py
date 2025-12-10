@@ -3,17 +3,18 @@ import argparse
 import os
 import matplotlib.pyplot as plt
 
-
+# command to check to see if the threshold is reached
 def infection_threshold_reached(G, node, threshold):
     neighbors = list(G.neighbors(node))
     if not neighbors:  # avoid divide-by-zero
         return False
 
+    # this gets the amount of nodes that have the infected flag set to true
     infected_count = sum(
         1 for nbr in neighbors 
         if G.nodes[nbr].get("infected", False)
     )
-
+    # this is the check to see if it is enough
     return infected_count >= threshold * len(neighbors)
 
 
@@ -46,7 +47,10 @@ def main(argv=None):
     G = nx.read_gml(args.graph)
 
     if args.initiator:
+        # The initiators of the cascade or infection
         begin = [int(x) for x in args.initiator.split(",")]
+    
+    #splitting up the 2 types of action
     if args.action == 'covid':
         #prob of infection
         if args.probability_of_infection:
@@ -68,46 +72,58 @@ def main(argv=None):
             vacc = args.vaccination
         pass
     else:
-        #threshold
-        threshold = float(args.threshold)
+        # Threshold is unique to cascade
+        try:
+            threshold = float(args.threshold)
+        except:
+            print("You need a threshold for a cascade")
+            exit()
+        # Setting the position of the nodes in the graph for -interactive
         pos = nx.spring_layout(G)
+        # list to check to see if it changes 
         unInfected = list(G.nodes())
+        # setting up intial nodes
         for i in begin:
             G.nodes[i]["infected"] = True
             unInfected.remove(i)
+        # Our while loop is gonna run until nothing changes 
         changed = True
 
+        # interactive graph with the intial infected as red
         if args.interactive:
             colors = ["red" if G.nodes[n].get("infected", False) else "lightgray" for n in G.nodes()]
             nx.draw(G, pos, node_color=colors, with_labels=True)
             plt.show()
         
+        # inital value for the changed nodes
         if args.plot:
             new_infections = [len(begin)]
-
-        
-
 
         while changed:
             changeNode = []
             changed = False
-            print(unInfected)
+            # checks every item in the unInfected to see if the newly infected nodes change it 
             for i in unInfected:
                 if infection_threshold_reached(G, i, threshold):
-                    
                     changed = True
                     changeNode.append(i)
+            
+            # every node that should change on the step changes now so that it does cascade prematurely
             for node in changeNode:
                 G.nodes[node]["infected"] = True
                 unInfected.remove(node)
+            
+            # showing the updated graph with newly infected nodes
             if args.interactive:
                 colors = ["red" if G.nodes[n].get("infected", False) else "lightgray" for n in G.nodes()]
                 nx.draw(G, pos, node_color=colors, with_labels=True)
                 plt.show()
+
+            # adding the amount of changed nodes on that step
             if args.plot:
                 new_infections.append(len(changeNode))
-        print("These are the nodes that were unable to get the information")
-        print(unInfected)
+        
+        # plotting
         if args.plot:
             plt.figure()
             plt.plot(new_infections, marker='o')
